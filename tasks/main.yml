@@ -27,5 +27,8 @@
     state: absent
   changed_when: no
 - name: Add (disabled) local-repo.mysql.com.list
-  copy: src=local-repo.mysql.com.list dest=/etc/apt/sources.list.d/
+  copy:
+    src: local-repo.mysql.com.list
+    dest: /etc/apt/sources.list.d/
+  changed_when: no
 
