@@ -3,6 +3,12 @@
 - set_fact:
     apt_repository_mysql: "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian/ {{ ansible_distribution_release }} mysql-{{ mysql_server_version }}"
 
+- name: Add /etc/mysql/conf.d/local-disable-binary-log.cnf
+  copy:
+    src: local-disable-binary-log.cnf
+    dest: /etc/mysql/conf.d/
+  changed_when: no
+
 - name: Ensure apt-transport-https
   apt:
     pkg: apt-transport-https
