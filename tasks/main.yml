@@ -1,7 +1,7 @@
 ---
 
 - set_fact:
-    apt_repository_mysql: "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian/ {{ ansible_distribution_release }} mysql-{{ mysql_server_version }}"
+    apt_repository_mysql: "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release|default(ansible_distribution_release) }} mysql-{{ mysql_version }}"
 
 - name: Add /etc/mysql/conf.d/local-disable-binary-log.cnf
   copy:
@@ -33,9 +33,9 @@
     repo: "{{ apt_repository_mysql }}"
     state: present
   changed_when: no
-- name: Update mysql-community-server
+- name: Update {{ mysql_package }}
   apt:
-    pkg: mysql-community-server
+    pkg: "{{ mysql_package }}"
     update_cache: yes
     state: latest
 - name: "Deactivate apt repository (changed_when: no)"
