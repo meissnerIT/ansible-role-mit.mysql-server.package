@@ -1,0 +1,65 @@
+---
+
+# mit-ansible-install-package-from-apt-source
+# 2023-10-12: Initial version
+# 2024-07-09: Added local gpg key
+
+# https://dev.mysql.com/doc/refman/8.0/en/checking-gpg-signature.html
+- set_fact:
+    ansible_role_name: mit.mysql-server.package
+    apt_keyrings: /etc/apt/keyrings
+    # used for filenames
+    visible_name: mysql
+- set_fact:
+    local_apt_key: "{{ apt_keyrings }}/{{ visible_name }}.gpg"
+- set_fact:
+    apt_package: mysql-community-server
+    apt_source_list_name: local-{{ visible_name }}.list
+    apt_repository: "deb [signed-by={{ local_apt_key }}] http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release|default(ansible_distribution_release) }} mysql-{{ mysql_version }}"
+    gpg_key_src: mysql.gpg
+
+# No need to change anything beyond this line
+
+- name: Create {{ apt_keyrings }}
+  file:
+    path: "{{ apt_keyrings }}"
+    state: directory
+- name: Install gpg
+  apt:
+    pkg: gpg
+- name: Add apt gpg key
+  shell: "wget -q -O - {{ gpg_key_src }} | gpg --dearmor > {{ local_apt_key }}"
+  args:
+    creates: "{{ local_apt_key }}"
+  environment: "{{ proxy_env }}"
+  when: gpg_key_src is regex('^http.*')
+- name: Add apt gpg key
+  copy:
+    src: "{{ gpg_key_src }}"
+    dest: "{{ local_apt_key }}"
+  when: gpg_key_src is not regex('^http.*')
+- name: Enable apt repository
+  apt_repository:
+    repo: "{{ apt_repository }}"
+    state: present
+  changed_when: no
+- name: Install {{ apt_package }}
+  apt:
+    name: '{{ apt_package }}'
+    update_cache: yes
+    state: present
+- name: Deactivate apt repository
+  apt_repository:
+    repo: '{{ apt_repository }}'
+    state: absent
+  changed_when: no
+- name: Remove /etc/apt/sources.list.d/{{ apt_source_list_name }}
+  file:
+    path: /etc/apt/sources.list.d/{{ apt_source_list_name }}
+    state: absent
+- name: Add {{ apt_source_list_name }}.disabled
+  template:
+    src: local-apt.list
+    dest: /etc/apt/sources.list.d/{{ apt_source_list_name }}.disabled
+  changed_when: no
+

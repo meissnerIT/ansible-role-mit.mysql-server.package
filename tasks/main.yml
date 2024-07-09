@@ -1,51 +1,10 @@
 ---
 
-- set_fact:
-    apt_repository_mysql: "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release|default(ansible_distribution_release) }} mysql-{{ mysql_version }}"
-
 - name: Add /etc/mysql/conf.d/local-disable-binary-log.cnf
   copy:
     src: local-disable-binary-log.cnf
     dest: /etc/mysql/conf.d/
   changed_when: no
 
-- name: Ensure apt-transport-https
-  apt:
-    pkg: apt-transport-https
-    update_cache: no
-
-# https://dev.mysql.com/doc/refman/8.0/en/checking-gpg-signature.html
-- name: Add apt gpg key for MySQL packages (/usr/share/keyrings/mysql.gpg)
-  copy:
-    src: mysql.gpg
-    dest: /usr/share/keyrings/mysql.gpg
-- name: Remove deprecated apt gpg key from /etc/apt/trusted.gpg
-  command: apt-key del 5072E1F5
-  changed_when: no
-- name: Remove deprecated apt gpg key from /etc/apt/trusted.gpg.d/
-  apt_key:
-    id: 5072E1F5
-    url: http://repo.mysql.com/RPM-GPG-KEY-mysql
-    state: absent
-
-- name: "Enable apt repository (changed_when: no)"
-  apt_repository:
-    repo: "{{ apt_repository_mysql }}"
-    state: present
-  changed_when: no
-- name: Update {{ mysql_package }}
-  apt:
-    pkg: "{{ mysql_package }}"
-    update_cache: yes
-    state: latest
-- name: "Deactivate apt repository (changed_when: no)"
-  apt_repository:
-    repo:  "{{ apt_repository_mysql }}"
-    state: absent
-  changed_when: no
-- name: Add (disabled) local-repo.mysql.com.list
-  template:
-    src: local-repo.mysql.com.list
-    dest: /etc/apt/sources.list.d/local-repo.mysql.com.list.disabled
-  changed_when: no
+- include_tasks: install.yml
 
