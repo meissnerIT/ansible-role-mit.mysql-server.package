@@ -1,10 +1,32 @@
 ---
 
 - name: Add /etc/mysql/conf.d/local-disable-binary-log.cnf
-  copy:
+  ansible.builtin.copy:
     src: local-disable-binary-log.cnf
     dest: /etc/mysql/conf.d/
-  changed_when: no
+    mode: "0644"
+  changed_when: false
 
-- include_tasks: install.yml
+- name: Set defaults
+  ansible.builtin.set_fact:
+    # ansible_role_name: mit.mysql-server.package
+    apt_keyrings: /etc/apt/keyrings
+    # used for filenames
+    visible_name: mysql
+- name: Set defaults
+  ansible.builtin.set_fact:
+    # 2025-10-30: Nowhere to get, created with:
+    # gpg --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C
+    # gpg -a --export B7B3B788A8D3785C > mysql.asc
+    local_apt_key: "{{ apt_keyrings }}/{{ visible_name }}.asc"
+- name: Set defaults
+  ansible.builtin.set_fact:
+    apt_package: mysql-community-server
+    apt_source_list_name: local-{{ visible_name }}.list
+    apt_repository: >
+      deb [signed-by={{ local_apt_key }}]
+      http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release | default(ansible_distribution_release) }} mysql-{{ mysql_version }}"
+    gpg_key_src: mysql.asc
 
+- name: Include install.yml
+  ansible.builtin.include_tasks: install.yml
