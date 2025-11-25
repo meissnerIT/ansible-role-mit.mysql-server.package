@@ -11,6 +11,10 @@
   ansible.builtin.set_fact:
     # ansible_role_name: mit.mysql-server.package
     apt_keyrings: /etc/apt/keyrings
+    # 8.0.44 → 8.0
+    mysql_major_version: "{{ mysql_version | regex_replace('^([0-9]+\\.[0-9]+)(.*)$', '\\1') }}"
+    # debian12
+    version_suffix: "{{ ansible_lsb.id | lower + ansible_lsb.release }}"
     # used for filenames
     visible_name: mysql
 - name: Set defaults
@@ -21,11 +25,11 @@
     local_apt_key: "{{ apt_keyrings }}/{{ visible_name }}.asc"
 - name: Set defaults
   ansible.builtin.set_fact:
-    apt_package: mysql-community-server
+    apt_package: "mysql-community-server={{ mysql_version + version_suffix }}"
     apt_source_list_name: local-{{ visible_name }}.list
     apt_repository: >
       deb [signed-by={{ local_apt_key }}]
-      http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release | default(ansible_distribution_release) }} mysql-{{ mysql_version }}"
+      http://repo.mysql.com/apt/debian/ {{ mysql_distribution_release | default(ansible_distribution_release) }} mysql-{{ mysql_major_version }}
     gpg_key_src: mysql.asc
 
 - name: Include install.yml
